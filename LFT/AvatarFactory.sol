@@ -46,9 +46,9 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
     event NFT1155BatchReceived(address operator, address from, uint256[] tokenIds, uint256[] amounts, bytes data);
 
     event Avatar721Mint(
-        uint256 indexed id,
+        uint256 id,
         uint256 udIndex,
-        uint256 blockNum,
+        // uint256 blockNum,
         address erc20,
         uint256 erc20Amount,
         address erc721,
@@ -61,8 +61,8 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
     );
 
     event Avatar721Burn(
-        uint256 indexed id,
-        uint256 blockNum,
+        uint256 id,
+        // uint256 blockNum,
         address erc20,
         uint256 erc20Amount,
         address erc721,
@@ -160,7 +160,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
         emit Avatar721Mint(
                 id,
                 udIndex,
-                block.number,
+                // block.number,
                 extraInfo.erc20,
                 extraInfo.erc20Amount,
                 extraInfo.erc721,
@@ -196,7 +196,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
 
         emit Avatar721Burn(
                 tokenId,
-                block.number,
+                // block.number,
                 extraInfo.erc20,
                 extraInfo.erc20Amount,
                 extraInfo.erc721,

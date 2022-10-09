@@ -139,7 +139,8 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
      */
     function mint(address to, IAvatar721.ExtraInfo calldata info) external virtual  onlyMinter returns (uint256 id) 
     {
-        
+        uint256 tokenId = _currentIndex;
+
         _extraInfo[_currentIndex].erc20 = info.erc20;
         _extraInfo[_currentIndex].erc20Amount = info.erc20Amount;
         _extraInfo[_currentIndex].erc721 = info.erc721;
@@ -150,7 +151,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
         _extraInfo[_currentIndex].id = _currentIndex;
         _safeMint(to, 1, "");
 
-        return _extraInfo[_currentIndex].id;
+        return tokenId;
     }
 
     /**
