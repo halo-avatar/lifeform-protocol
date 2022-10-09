@@ -47,6 +47,8 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
 
     event Avatar721Mint(
         uint256 indexed id,
+        uint256 udIndex,
+        uint256 blockNum,
         address erc20,
         uint256 erc20Amount,
         address erc721,
@@ -55,13 +57,12 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
         uint256[] children1155,
         uint256[] amount1155,
         address nftContract,
-        address author,
-        uint256 createdTime,
-        uint256 blockNum
+        address author
     );
 
     event Avatar721Burn(
         uint256 indexed id,
+        uint256 blockNum,
         address erc20,
         uint256 erc20Amount,
         address erc721,
@@ -70,9 +71,8 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
         uint256[] children1155,
         uint256[] amount1155,
         address who,
-        address nftContract,
-        uint256 createdTime,
-        uint256 blockNum
+        address nftContract
+        
     );
 
     using SafeERC20 for IERC20;
@@ -130,7 +130,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
     }
 
 
-    function mintAvatar721(IAvatar721.ExtraInfo calldata extraInfo) external
+    function mintAvatar721(uint256 udIndex,IAvatar721.ExtraInfo calldata extraInfo) external
     {
         address origin = msg.sender;
         if(_IAMs[msg.sender] == false){
@@ -159,6 +159,8 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
 
         emit Avatar721Mint(
                 id,
+                udIndex,
+                block.number,
                 extraInfo.erc20,
                 extraInfo.erc20Amount,
                 extraInfo.erc721,
@@ -167,9 +169,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
                 extraInfo.children1155,
                 extraInfo.amount1155,
                 address(_avatar721),
-                msg.sender,
-                block.timestamp,
-                block.number
+                msg.sender
             );
     } 
 
@@ -196,6 +196,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
 
         emit Avatar721Burn(
                 tokenId,
+                block.number,
                 extraInfo.erc20,
                 extraInfo.erc20Amount,
                 extraInfo.erc721,
@@ -204,9 +205,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
                 extraInfo.children1155,
                 extraInfo.amount1155,
                 msg.sender,
-                address(_avatar721),
-                block.timestamp,
-                block.number
+                address(_avatar721)
             );
     }
 

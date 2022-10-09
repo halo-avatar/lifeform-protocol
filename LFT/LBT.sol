@@ -25,17 +25,20 @@
 */
 
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
     
     using Strings for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     string public _baseUri =  "https://ipfs";
     string public _metatype =  ".json";
@@ -43,6 +46,8 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
     uint256 public _mintIndex;
     bool public _publicMint;
     bool public _personality = false;
+
+    EnumerableSet.AddressSet private _sbtContracts;
 
     address private _signer;
    
@@ -79,7 +84,7 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
     function burn(uint256 tokenId) public{
         _burn(tokenId);
     }
- 
+    
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         if(!_personality){
@@ -90,15 +95,18 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
         }
     }
 
+    //check the owner for a tokenid
     function isOwner(uint256 tokenId, address owner) public view returns(bool isowner) {
         address tokenOwner = ownerOf(tokenId);
         isowner = (tokenOwner == owner);
     }
 
+    //get the bounded token id
     function getBoundId(address owner) public view returns(uint256 tokenId) {
         return tokenOfOwnerByIndex(owner,0);
     }
 
+    //get the mint status for an address
     function getMintState(bytes memory sign) public view returns(uint8 state) {
         if(balanceOf(msg.sender) > 0){
             return 2;
@@ -122,26 +130,67 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
         return super.supportsInterface(interfaceId);
     }
 
+
     function updateBaseUri(string memory baseUri) public onlyOwner {
         _baseUri = baseUri;
     }
     
+    //public mint switch
     function updatePublicMint(bool enable) public onlyOwner {
         _publicMint = enable;
     }
 
+    //update the signature signer
     function updateSigner(address signer) public onlyOwner {
         _signer = signer;
     }
 
+    //public personality token switch
     function updatePersonality(bool enable) public onlyOwner {
         _personality = enable;
     }
 
-    function verify(address _user, bytes memory _signatures) public view returns (bool) {
-        bytes32 message = keccak256(abi.encodePacked(_user, address(this)));
+    //add a sbt contract to white list
+    function addSBTContract(address sbtContract) public onlyOwner {
+        if(!_sbtContracts.contains(sbtContract)){
+            _sbtContracts.add(sbtContract);
+        }
+    }
+
+    //remove a sbt contract from white list
+    function removeSBTContract(address sbtContract) public onlyOwner {
+        if(_sbtContracts.contains(sbtContract)){
+            _sbtContracts.remove(sbtContract);
+        }
+    }
+
+    //get sbt contract in  white list
+    function getSBTContracts() public view returns ( address[] memory ) {
+        return _sbtContracts.values();
+    }
+
+    //verify the mint permissions
+    function verify(address user, bytes memory signatures) public view returns (bool) {
+
+        //for sbtContract verify
+        address sbtContract;
+        for(uint i=0; i< _sbtContracts.length(); i++){
+            sbtContract = _sbtContracts.at(i);
+            if(sbtContract != address(0x0)){
+                if((IERC721)(sbtContract).balanceOf(user)>0){
+                    return true;
+                }
+            }
+        }
+
+        if(signatures.length==0){
+            return false;
+        }
+      
+        //for whitelist verify
+        bytes32 message = keccak256(abi.encodePacked(user, address(this)));
         bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", message));
-        address[] memory signList = recoverAddresses(hash, _signatures);
+        address[] memory signList = recoverAddresses(hash, signatures);
         return signList[0] == _signer;
     }
 
