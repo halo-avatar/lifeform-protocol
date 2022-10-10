@@ -33,7 +33,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
@@ -77,7 +76,6 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
 
     // for IAMs
     mapping(address => bool) public _IAMs;
@@ -130,7 +128,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
     }
 
 
-    function mintAvatar721(uint256 udIndex,IAvatar721.ExtraInfo calldata extraInfo) external
+    function mintAvatar721(uint256 udIndex,IAvatar721.ExtraInfo calldata extraInfo) external nonReentrant
     {
         address origin = msg.sender;
         if(_IAMs[msg.sender] == false){
@@ -175,11 +173,12 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
 
 
 
-    function burnAvatar721(uint256 tokenId) external{
+    function burnAvatar721(uint256 tokenId) external nonReentrant {
       
         IAvatar721.ExtraInfo memory extraInfo = _avatar721.getExtraInfo(tokenId);
+        address avatar721 = address(_avatar721);
 
-        (IERC721)((address)(_avatar721)).safeTransferFrom(msg.sender, address(this), tokenId);
+        (IERC721)(avatar721).safeTransferFrom(msg.sender, address(this), tokenId);
         _avatar721.burn(tokenId);
 
         if(extraInfo.erc20Amount>0){
@@ -205,7 +204,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
                 extraInfo.children1155,
                 extraInfo.amount1155,
                 msg.sender,
-                address(_avatar721)
+                avatar721
             );
     }
 

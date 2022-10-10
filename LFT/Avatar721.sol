@@ -137,7 +137,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
      * @param to The address that will receive the minted token.
      * @param info The token info to mint.
      */
-    function mint(address to, IAvatar721.ExtraInfo calldata info) external virtual  onlyMinter returns (uint256 id) 
+    function mint(address to, IAvatar721.ExtraInfo calldata info) external override  onlyMinter returns (uint256 id) 
     {
         uint256 tokenId = _currentIndex;
 
@@ -184,7 +184,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
     }
 
     /**
-     * @dev function to get the list of token IDs of the requested owner.
+     * @dev The function returns the list of tokens info after the token ID(pageMax*offset)
      * @param owner the tokens owner address
      * @param offset page index
      * @param pageMax the max count of one page
@@ -222,7 +222,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
      /**
      * @dev function to get the avatar extra info by tokenId
      */
-    function getExtraInfo(uint256 tokenId) external view returns (IAvatar721.ExtraInfo memory){
+    function getExtraInfo(uint256 tokenId) external override view returns (IAvatar721.ExtraInfo memory){
         return _extraInfo[tokenId];
     }
 

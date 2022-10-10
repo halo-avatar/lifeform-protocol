@@ -28,14 +28,11 @@
 pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
+contract LifeformBoundToken is ERC721Enumerable, Ownable {
     
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;

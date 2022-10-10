@@ -30,13 +30,9 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-// import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
@@ -105,7 +101,6 @@ contract StoreFactory is Ownable,ReentrancyGuard{
 
     using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 public constant EIP712DOMAIN_TYPEHASH = keccak256(
@@ -184,7 +179,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         return block.chainid;
     }
 
-    function mintAdornWithETH(address target, uint64 ercType, MintInfo calldata condition, bytes memory dataSignature) public payable
+    function mintAdornWithETH(address target, uint64 ercType, MintInfo calldata condition, bytes memory dataSignature) public payable nonReentrant
     {
         require(condition.costErc20 == address(0x0), "invalid mint method!" );
         uint256 cost = 0;
@@ -210,7 +205,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     }
 
     //mint 
-    function mintAdorn( address target, uint64  ercType, MintInfo calldata condition, bytes memory dataSignature) external 
+    function mintAdorn( address target, uint64  ercType, MintInfo calldata condition, bytes memory dataSignature) public nonReentrant
     {
         require(condition.costErc20 != address(0x0), "invalid mint currency type !" );
 
@@ -240,11 +235,12 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     function _mintAdorn721(address target, MintInfo calldata condition, bytes memory dataSignature) internal
     {
         address origin = msg.sender;
-        if(_IAMs[msg.sender] == false){
+        bool isIAM = _IAMs[msg.sender];
+        if(isIAM == false){
             require(!origin.isContract(), "lifeform: call to non-contract");
         }
         
-        require(  _isUserStart || _IAMs[msg.sender]  , "lifeform: can't mint" );
+        require(  _isUserStart || isIAM  , "lifeform: can't mint" );
 
         if( _isUserStart ){
             check(condition, dataSignature);
@@ -266,7 +262,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     } 
 
     //destory a 721 asset
-    function burnAdorn721(address collect, uint256 tokenId) external {
+    function burnAdorn721(address collect, uint256 tokenId) public nonReentrant{
 
         (IAdorn721)(collect).burn(tokenId);
 
@@ -284,11 +280,12 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     {
 
         address origin = msg.sender;
-        if(_IAMs[msg.sender] == false){
+        bool isIAM = _IAMs[msg.sender];
+        if(isIAM == false){
             require(!origin.isContract(), "lifeform: call to non-contract");
         }
 
-        require( _isUserStart || _IAMs[msg.sender]  , "lifeform: can't mint" );
+        require( _isUserStart || isIAM  , "lifeform: can't mint" );
 
         if( _isUserStart ){
             check(condition, dataSignature);
@@ -310,7 +307,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     } 
 
     //batch destory the 1155 assets
-    function burnAdorn1155(address collect, uint256[] memory tokenIds, uint256[] memory amounts) external{
+    function burnAdorn1155(address collect, uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
 
          (IAdorn1155)(collect).burnBatch(msg.sender, tokenIds, amounts);
 

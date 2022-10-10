@@ -30,13 +30,9 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-// import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
@@ -101,7 +97,6 @@ contract StoreFactory is Ownable,ReentrancyGuard{
 
     using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 public constant EIP712DOMAIN_TYPEHASH = keccak256(
@@ -168,14 +163,15 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         return block.chainid;
     }
 
-    function mintAdorn721(address target, MintInfo calldata condition, bytes memory dataSignature) external
+    function mintAdorn721(address target, MintInfo calldata condition, bytes memory dataSignature) external nonReentrant
     {
         address origin = msg.sender;
-        if(_IAMs[msg.sender] == false){
+        bool isIAM = _IAMs[msg.sender];
+        if(isIAM == false){
             require(!origin.isContract(), "lifeform: call to non-contract");
         }
         
-        require(  _isUserStart || _IAMs[msg.sender]  , "lifeform: can't mint" );
+        require(  _isUserStart || isIAM  , "lifeform: can't mint" );
 
         if( _isUserStart ){
 
@@ -197,7 +193,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
             );
     } 
 
-    function burnAdorn721(address collect, uint256 tokenId) external {
+    function burnAdorn721(address collect, uint256 tokenId) external nonReentrant {
 
         (IAdorn721)(collect).burn(tokenId);
 
@@ -210,44 +206,45 @@ contract StoreFactory is Ownable,ReentrancyGuard{
             );
     }
 
-    function mintAdorn1155( address target, MintInfo calldata condition, bytes memory dataSignature) external 
+    function mintAdorn1155( address target, MintInfo calldata condition, bytes memory dataSignature) external nonReentrant
     {
        address origin = msg.sender;
-        if(_IAMs[msg.sender] == false){
-            require(!origin.isContract(), "lifeform: call to non-contract");
-        }
+       bool isIAM =_IAMs[msg.sender];
+       if( isIAM == false){
+           require(!origin.isContract(), "lifeform: call to non-contract");
+       }
 
-        require( _isUserStart || _IAMs[msg.sender]  , "lifeform: can't mint" );
+       require( _isUserStart || isIAM  , "lifeform: can't mint" );
 
-        if( _isUserStart ){
+       if( _isUserStart ){
 
-            check(condition, dataSignature);
-        
-            _signCodes.add(condition.signCode);
-        }
+           check(condition, dataSignature);
+       
+           _signCodes.add(condition.signCode);
+       }
 
-        uint256 cost = 0;
-        for(uint256 i=0; i<condition.ids.length; i++){
-            cost = cost.add(condition.prices[i].mul(condition.amounts[i]));
-        }
+       uint256 cost = 0;
+       for(uint256 i=0; i<condition.ids.length; i++){
+           cost = cost.add(condition.prices[i].mul(condition.amounts[i]));
+       }
 
-        IERC20 costErc20 = (IERC20)(condition.costErc20);
-        costErc20.safeTransferFrom(msg.sender, _teamWallet, cost );
-        
-        (IAdorn1155)(condition.collect).mintBatch(target, condition.ids, condition.amounts, "");
+       IERC20 costErc20 = (IERC20)(condition.costErc20);
+       costErc20.safeTransferFrom(msg.sender, _teamWallet, cost );
+       
+       (IAdorn1155)(condition.collect).mintBatch(target, condition.ids, condition.amounts, "");
 
-        emit Adorn1155Mint(
-                condition.ids,
-                condition.amounts,
-                target,
-                msg.sender,
-                condition.collect,
-                block.timestamp,
-                block.number
-            );
+       emit Adorn1155Mint(
+               condition.ids,
+               condition.amounts,
+               target,
+               msg.sender,
+               condition.collect,
+               block.timestamp,
+               block.number
+           );
     } 
 
-    function burnAdorn1155(address collect, uint256[] memory tokenIds, uint256[] memory amounts) external{
+    function burnAdorn1155(address collect, uint256[] memory tokenIds, uint256[] memory amounts) external nonReentrant {
 
          (IAdorn1155)(collect).burnBatch(msg.sender, tokenIds, amounts);
 

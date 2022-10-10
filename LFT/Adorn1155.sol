@@ -27,7 +27,6 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
@@ -116,7 +115,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received}, which is called upon a safe transfer.
      */
-    function mint(address account, uint256 tokenId, uint256 amount, bytes memory data) external onlyMinter
+    function mint(address account, uint256 tokenId, uint256 amount, bytes memory data) external override onlyMinter
     {
         _mint(account, tokenId, amount, data);
 
@@ -138,7 +137,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received}, which is called upon a safe transfer.
      */
-    function mintBatch(address account, uint256[] memory tokenIds, uint256[] memory amounts, bytes memory data) external onlyMinter
+    function mintBatch(address account, uint256[] memory tokenIds, uint256[] memory amounts, bytes memory data) external override onlyMinter
      {
         _mintBatch(account, tokenIds, amounts, data);
 
@@ -158,9 +157,9 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      * @param account The address that will burn token.
      * @param tokenId uint256 id of the ERC1155 token to be burned.
      */
-    function burn(address account, uint256 tokenId, uint256 amount) external onlyMinter
+    function burn(address account, uint256 tokenId, uint256 amount) external override onlyMinter
      {
-        require( account == msg.sender ||  isApprovedForAll(account,msg.sender), "ERC1155: transfer caller is not owner nor approved");
+        require( account == msg.sender ||  isApprovedForAll(account,msg.sender), "ERC1155: burn caller is not owner nor approved");
         _burn(account, tokenId, amount);
 
         if(balanceOf(account,tokenId)==0){
@@ -171,12 +170,12 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
     /**
      * @dev function to batch burn a specific ERC1155 tokens.
      * @param account The address that will burn token.
-     * @param tokenId uint256 id of the ERC1155 tokens to be burned.
+     * @param tokenIds uint256 id of the ERC1155 tokens to be burned.
      * @param amounts the amount of the ERC1155 tokens to be burned.
      */
-    function burnBatch(address account, uint256[] memory tokenIds, uint256[] memory amounts) external onlyMinter
+    function burnBatch(address account, uint256[] memory tokenIds, uint256[] memory amounts) external override onlyMinter
      {
-        require( account == msg.sender || isApprovedForAll(account,msg.sender), "ERC1155: transfer caller is not owner nor approved");
+        require( account == msg.sender || isApprovedForAll(account,msg.sender), "ERC1155: burn caller is not owner nor approved");
         _burnBatch(account, tokenIds, amounts);
 
         for(uint i=0; i<tokenIds.length; i++){
@@ -187,12 +186,12 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
     }
 
     /**
-     * @dev function to get the list of token IDs of the requested owner.
+     * @dev The function returns the list of tokens info after the token ID(pageMax*offset)
      * @param owner the tokens owner address
      * @param offset page index
      * @param pageMax the max count of one page
      */
-     function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external view returns ( IAdorn1155.NftInfo1155[] memory nftInfos) {
+     function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external override view returns ( IAdorn1155.NftInfo1155[] memory nftInfos) {
 
         require(pageMax>0, "invalid page size!");
         
@@ -224,7 +223,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
     /**
      * @dev function to get the all of the ids.
      */
-    function totalIds() external  view returns ( uint256[] memory ids ) {
+    function totalIds() external override view returns ( uint256[] memory ids ) {
         
         uint maxCount = _ids.length();
         ids = new uint256[](maxCount);
@@ -237,7 +236,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
     /**
      * @dev function to get the holder count by id.
      */
-    function holderCount(uint256 id) external  view returns ( uint256 ) {
+    function holderCount(uint256 id) external  override view returns ( uint256 ) {
         return _holderInfo[id].length();
     }
 

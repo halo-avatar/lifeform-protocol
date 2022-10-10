@@ -119,9 +119,9 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
     /**
      * @dev function to mint tokens.
      * @param to The address that will receive the minted token.
-     * @param amount The token info to mint.
+     * @param amount The token quantity to mint.
      */
-    function mint(address to, uint256 amount) external virtual  onlyMinter returns  (uint256 mintStartId)
+    function mint(address to, uint256 amount) external override  onlyMinter returns  (uint256 mintStartId)
     {
         mintStartId=_currentIndex;
         _safeMint(to, amount, "");
@@ -131,7 +131,7 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
      * @dev function to burn a specific ERC721 token.
      * @param tokenId uint256 id of the ERC721 token to be burned.
      */
-    function burn(uint256 tokenId) external virtual  onlyMinter
+    function burn(uint256 tokenId) external override  onlyMinter
     {
         require(
             _isApprovedOrOwner(_msgSender(), tokenId),
@@ -158,12 +158,12 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
     }
 
     /**
-     * @dev function to get the list of token IDs of the requested owner.
+     * @dev The function returns the list of tokens IDs after the token ID(pageMax*offset)
      * @param owner the tokens owner address
      * @param offset page index
      * @param pageMax the max count of one page
      */
-    function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external view  returns (uint256[] memory tokens) {
+    function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external override view  returns (uint256[] memory tokens) {
 
         require(pageMax>0, "invalid page size!");
         
