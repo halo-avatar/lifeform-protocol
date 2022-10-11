@@ -33,6 +33,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
@@ -101,6 +102,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
 
     using SafeERC20 for IERC20;
     using Address for address;
+    using SafeMath for uint256;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 public constant EIP712DOMAIN_TYPEHASH = keccak256(
