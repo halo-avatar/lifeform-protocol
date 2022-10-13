@@ -188,6 +188,15 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
         return historyCount;
     }
 
+    function getSoldCount(address nftContract, uint256 tokenId) view public returns(uint256) {
+        uint256 soldCount = _721SoldCount[nftContract];
+        if(soldCount!=0){
+            return soldCount;
+        }
+        soldCount = _1155SoldCount[nftContract][tokenId];
+        return soldCount;
+    }
+
     // get ProjcetInfo
     function getProjectInfo(address nftContract) view public returns( ProjcetInfo memory ) {
         return _projcetInfo[nftContract];
@@ -262,6 +271,8 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
         }
         require(_projcetInfo[nftContract].isUserStart || exist  , "can't mint" );
 
+        require( block.timestamp >= condition.startTime && block.timestamp < condition.endTime, "out date" );
+
         bool have ;
         uint256 historyCount;
         (have,historyCount)= _721HistoryCount[nftContract].tryGet(msg.sender);
@@ -311,7 +322,9 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
         if(!exist){
             require(!msg.sender.isContract(), "call to non-contract");
         }
-        require(_projcetInfo[nftContract].isUserStart || exist  , "can't mint" );
+        require( _projcetInfo[nftContract].isUserStart || exist  , "can't mint" );
+
+        require( block.timestamp >= condition.startTime && block.timestamp < condition.endTime, "out date" );
 
         uint256 tokenId = condition.tokenId;
 
