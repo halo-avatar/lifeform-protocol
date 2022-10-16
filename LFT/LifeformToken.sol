@@ -196,7 +196,7 @@ contract LifeformToken is IERC20, Ownable {
  
 
     /**
-    * @dev Transfer tokens with fee
+    * @dev 
     * @param from address The address which you want to send tokens from
     * @param to address The address which you want to transfer to
     * @param value uint256s the amount of tokens to be transferred
