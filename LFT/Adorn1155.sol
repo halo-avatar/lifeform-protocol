@@ -25,7 +25,7 @@
 */
 
 // SPDX-License-Identifier: MIT 
-pragma solidity ^0.8.16;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -46,9 +46,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
     string public _baseURI =  "https://ipfs.lifeform.cc/bsc/adorn1155/token/";
     string public _metatype =  ".json";
 
-    mapping(uint256 => EnumerableSet.AddressSet) private _holderInfo;
-    EnumerableSet.UintSet private _ids;
-
+    EnumerableSet.UintSet private _mintedIds;
     mapping(address => bool) public _minters;
 
     modifier onlyMinter() {
@@ -56,7 +54,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
         _;
     }
 
-    constructor( address factory, string memory name,string memory symbol, string memory baseURI, string memory metatype) 
+    constructor( string memory name,string memory symbol, string memory baseURI, string memory metatype) 
     ERC1155(baseURI) 
     {
         _name=name;
@@ -64,7 +62,6 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
         _metatype = metatype;
         _baseURI = baseURI;
 
-        addMinter(factory);
         addMinter(owner());
     }
 
@@ -102,10 +99,9 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      * @dev function to get the metadata url by tokenId
      */
     function uri(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_ids.contains(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        require(_mintedIds.contains(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return bytes(_baseURI).length > 0 ? string(abi.encodePacked(_baseURI, tokenId.toString(), _metatype)) : "";
     }
-
 
     /**
      * @dev function to mint tokens.
@@ -118,16 +114,10 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
     function mint(address account, uint256 tokenId, uint256 amount, bytes memory data) external override onlyMinter
     {
         _mint(account, tokenId, amount, data);
-
-        if(!_holderInfo[tokenId].contains(account)){
-            _holderInfo[tokenId].add(account);
-        }
-
-        if(!_ids.contains(tokenId)){
-            _ids.add(tokenId);
+        if(!_mintedIds.contains(tokenId)){
+            _mintedIds.add(tokenId);
         }
     }
-
 
     /**
      * @dev function to batch mint tokens.
@@ -142,12 +132,9 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
         _mintBatch(account, tokenIds, amounts, data);
 
         for(uint i=0; i<tokenIds.length; i++){
-            if(!_holderInfo[tokenIds[i]].contains(account)){
-                _holderInfo[tokenIds[i]].add(account);
-            }
             
-            if(!_ids.contains(tokenIds[i])){
-                _ids.add(tokenIds[i]);
+            if(!_mintedIds.contains(tokenIds[i])){
+                _mintedIds.add(tokenIds[i]);
             }
         }
     }
@@ -162,9 +149,6 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
         require( account == msg.sender ||  isApprovedForAll(account,msg.sender), "ERC1155: burn caller is not owner nor approved");
         _burn(account, tokenId, amount);
 
-        if(balanceOf(account,tokenId)==0){
-            _holderInfo[tokenId].remove(account);
-        }
     }
 
     /**
@@ -177,12 +161,6 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      {
         require( account == msg.sender || isApprovedForAll(account,msg.sender), "ERC1155: burn caller is not owner nor approved");
         _burnBatch(account, tokenIds, amounts);
-
-        for(uint i=0; i<tokenIds.length; i++){
-            if(balanceOf(account,tokenIds[i])==0){
-                _holderInfo[tokenIds[i]].remove(account);
-            }
-        }
     }
 
     /**
@@ -195,7 +173,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
 
         require(pageMax>0, "invalid page size!");
         
-        uint256 balance = _ids.length();
+        uint256 balance = _mintedIds.length();
         uint256 maxCount = 0;
         if(balance <= pageMax){
             maxCount = balance;
@@ -214,8 +192,8 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
 
         nftInfos = new IAdorn1155.NftInfo1155[](maxCount);
         for (uint i=0; i<maxCount; i++) {
-            nftInfos[i].id = _ids.at(offset*pageMax+i);
-            nftInfos[i].amount = balanceOf(owner, _ids.at(offset*pageMax+i) );
+            nftInfos[i].id = _mintedIds.at(offset*pageMax+i);
+            nftInfos[i].amount = balanceOf(owner, _mintedIds.at(offset*pageMax+i) );
         }
 
     }
@@ -225,19 +203,12 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      */
     function totalIds() external override view returns ( uint256[] memory ids ) {
         
-        uint maxCount = _ids.length();
+        uint maxCount = _mintedIds.length();
         ids = new uint256[](maxCount);
         for(uint i=0; i<maxCount; i++){
-            ids[i] = _ids.at(i);
+            ids[i] = _mintedIds.at(i);
         }
         return ids;
-    }
-
-    /**
-     * @dev function to get the holder count by id.
-     */
-    function holderCount(uint256 id) external  override view returns ( uint256 ) {
-        return _holderInfo[id].length();
     }
 
 }

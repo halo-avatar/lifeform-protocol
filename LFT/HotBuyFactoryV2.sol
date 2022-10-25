@@ -25,7 +25,7 @@
 */
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.16;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -427,6 +427,14 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
 
     function updateSigner( address signer) external onlyOwner {
         _SIGNER = signer;
+    }
+
+    function updateWETH( address weth) external onlyOwner {
+        _WETH = weth;
+    }
+    
+    function updateVault( address vault) external onlyOwner {
+        _VAULT = vault;
     }
 
     function hashCondition(Condition calldata condition) public pure returns (bytes32) {

@@ -1,0 +1,26 @@
+{
+  "name": "xxx",
+  "version": "1.0.0",
+  "description": "truffle compile",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "npx truffle complile"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.6.0",
+    "truffle": "^5.5.17",
+    "truffle-plugin-verify": "^0.5.26"
+  },
+  "dependencies": {
+    "truffle-flattener": "^1.5.0",
+    "web3-core-helpers": "^1.7.5"
+  },
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  }
+}

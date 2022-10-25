@@ -25,7 +25,7 @@
 */
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.16;
+pragma solidity 0.8.16;
 
 interface IAdorn1155  {
   
@@ -40,5 +40,4 @@ interface IAdorn1155  {
     function burnBatch(address account, uint256[] memory tokenIds, uint256[] memory amounts) external;
     function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external view returns ( IAdorn1155.NftInfo1155[] memory  nftInfos ) ;
     function totalIds() external  view returns ( uint256[] memory  ids );
-    function holderCount(uint256 id) external  view returns ( uint256 );
 }
