@@ -2,6 +2,24 @@
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "force",
+				"type": "bool"
+			}
+		],
+		"name": "applyBurnAvatar721",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
 				"name": "factory",
 				"type": "address"
@@ -74,6 +92,12 @@
 			{
 				"indexed": false,
 				"internalType": "address",
+				"name": "auther",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
 				"name": "nftContract",
 				"type": "address"
 			}
@@ -135,12 +159,105 @@
 			{
 				"indexed": false,
 				"internalType": "address",
+				"name": "auther",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
 				"name": "nftContract",
 				"type": "address"
 			}
 		],
 		"name": "Avatar721Mint",
 		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "claimBurnHeritage",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"components": [
+					{
+						"internalType": "address",
+						"name": "mintRule",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "udIndex",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "stakeErc20",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "stakeErc20Amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "costErc20",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "costErc20Amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "erc721",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "children721",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "address",
+						"name": "erc1155",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "children1155",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "amount1155",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "signCode",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "bytes",
+						"name": "wlSignature",
+						"type": "bytes"
+					}
+				],
+				"internalType": "struct IAvatarMintRule.MintRule",
+				"name": "mintData",
+				"type": "tuple"
+			}
+		],
+		"name": "mint",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -246,239 +363,6 @@
 		],
 		"name": "NFT721Received",
 		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "_avatar721",
-		"outputs": [
-			{
-				"internalType": "contract IAvatar721",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "_burnDuration",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "_factory",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "_fastBurnFeeRate",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "_freeTimePoint",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "_teamWallet",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "force",
-				"type": "bool"
-			}
-		],
-		"name": "applyBurnAvatar721",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "claimBurnHeritage",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getBurnList",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "tokenId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "freePoint",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct BaseMintRule.BurnList[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"components": [
-					{
-						"internalType": "address",
-						"name": "mintRule",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "udIndex",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "stakeErc20",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "stakeErc20Amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "costErc20",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "costErc20Amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "erc721",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256[]",
-						"name": "children721",
-						"type": "uint256[]"
-					},
-					{
-						"internalType": "address",
-						"name": "erc1155",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256[]",
-						"name": "children1155",
-						"type": "uint256[]"
-					},
-					{
-						"internalType": "uint256[]",
-						"name": "amount1155",
-						"type": "uint256[]"
-					},
-					{
-						"internalType": "bytes32",
-						"name": "signCode",
-						"type": "bytes32"
-					},
-					{
-						"internalType": "bytes",
-						"name": "wlSignature",
-						"type": "bytes"
-					}
-				],
-				"internalType": "struct IAvatarMintRule.MintRule",
-				"name": "mintData",
-				"type": "tuple"
-			}
-		],
-		"name": "mint",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"inputs": [
@@ -593,17 +477,23 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
+		"anonymous": false,
+		"inputs": [
 			{
+				"indexed": true,
 				"internalType": "address",
-				"name": "",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
 				"type": "address"
 			}
 		],
-		"stateMutability": "view",
-		"type": "function"
+		"name": "OwnershipTransferred",
+		"type": "event"
 	},
 	{
 		"inputs": [],
@@ -749,6 +639,128 @@
 		"name": "withdrawETH",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "_avatar721",
+		"outputs": [
+			{
+				"internalType": "contract IAvatar721",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "_burnDuration",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "_factory",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "_fastBurnFeeRate",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "_freeTimePoint",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "_teamWallet",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getBurnList",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "freePoint",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct BaseMintRule.BurnList[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	}
 ]
