@@ -35,6 +35,7 @@ interface IAvatar721  {
 
     struct ExtraInfo {
         uint256 id;
+        address mintRule;
         address erc20;
         uint256 erc20Amount;
         address erc721;
@@ -48,5 +49,5 @@ interface IAvatar721  {
     function mint(address to, IAvatar721.ExtraInfo calldata info) external returns (uint256 id) ;
     function burn(uint256 tokenId) external;
     function safeBatchTransferFrom(address from, address to, uint256[] memory ids , bytes memory data) external;
-    function mintedNumber(address addr) external returns(uint256);
+    function mintedNumber(address addr) external view returns(uint256);
 }

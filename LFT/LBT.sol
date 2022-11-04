@@ -25,19 +25,21 @@
 */
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-contract LifeformBoundToken is ERC721Enumerable, Ownable {
+contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
     
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    string public _baseUri =  "https://ipfs";
+    string public _baseUri =  "https://ipfs.lifeform.cc/bsc/lbt/";
     string public _metatype =  ".json";
 
     uint256 public _mintIndex;
@@ -64,21 +66,37 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable {
         return _baseUri;
     }
 
-    function mint(bytes memory sign) public{
+    function airdrop(address[] calldata whiteList) public onlyOwner {
 
-         _mintIndex++;
+        for (uint i=0; i<whiteList.length; i++) {
+
+            address to = whiteList[i];
+            require(to != address(0),"Address is not valid");
+
+            //for 721 A
+            // _safeMint(to, 1);
+            //for 721 normal
+            if(balanceOf(to) == 0){
+                 _mintIndex++;
+                _safeMint(to, _mintIndex);
+            }
+        }
+    }
+
+    function mint(bytes memory sign) public {
 
         if( !_publicMint ){
             require(verify(msg.sender, sign), "this sign is not valid");
         }
-
         require(balanceOf(msg.sender) == 0, "this address has a bound token!");
-      
+
+        _mintIndex++;
         _safeMint(msg.sender, _mintIndex);
        
     }
 
-    function burn(uint256 tokenId) public{
+    function burn(uint256 tokenId) public {
+        require(ownerOf(tokenId) == msg.sender, "invalid owner!");
         _burn(tokenId);
     }
     
@@ -90,12 +108,6 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable {
         else{
             return bytes(_baseUri).length > 0 ? string(abi.encodePacked(_baseUri, tokenId.toString(), _metatype)) : "";
         }
-    }
-
-    //check the owner for a tokenid
-    function isOwner(uint256 tokenId, address owner) public view returns(bool isowner) {
-        address tokenOwner = ownerOf(tokenId);
-        isowner = (tokenOwner == owner);
     }
 
     //get the bounded token id

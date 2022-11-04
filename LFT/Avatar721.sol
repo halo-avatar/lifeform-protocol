@@ -48,12 +48,11 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    constructor(address factory, string memory name,string memory symbol,string memory base, string memory metatype) 
+    constructor(string memory name,string memory symbol,string memory base, string memory metatype) 
         ERC721A(name, symbol) {
         _baseUri = base;
         _metatype = metatype; 
 
-        addMinter(factory);
         addMinter(owner());
     }
 
@@ -117,14 +116,6 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
     }
 
     /**
-     * @dev function to check the owner with a nftid
-     */
-    function isOwner(uint256 nftID, address owner) public view returns(bool isNFTOwner) {
-        address tokenOwner = ownerOf(nftID);
-        isNFTOwner = (tokenOwner == owner);
-    }
-
-    /**
      * @dev function to get the oership info by tokenId.
      */
     function getOwnershipOf(uint256 tokenId) public view  returns (TokenOwnership  memory) {
@@ -141,6 +132,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
     {
         uint256 tokenId = _currentIndex;
 
+        _extraInfo[_currentIndex].mintRule = info.mintRule;
         _extraInfo[_currentIndex].erc20 = info.erc20;
         _extraInfo[_currentIndex].erc20Amount = info.erc20Amount;
         _extraInfo[_currentIndex].erc721 = info.erc721;
@@ -161,7 +153,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
     function burn(uint256 tokenId) external override  onlyMinter
     {
         require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
+            _isApprovedOrOwner(tokenId),
             "caller is not owner nor approved"
         );
 
@@ -243,9 +235,8 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
     /**
      * @dev function to check the approve state 
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool ) {
+    function _isApprovedOrOwner( uint256 tokenId) internal view virtual returns (bool ) {
 
-        spender;
         TokenOwnership memory prevOwnership = ownershipOf(tokenId);
 
         bool isApprovedOrOwner = (_msgSender() == prevOwnership.addr ||

@@ -47,12 +47,11 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    constructor(address factory, string memory name,string memory symbol,string memory base, string memory metatype) 
+    constructor(string memory name,string memory symbol,string memory base, string memory metatype) 
         ERC721A(name, symbol) {
         _baseUri = base;
         _metatype = metatype; 
 
-        addMinter(factory);
         addMinter(owner());
     }
 
@@ -134,7 +133,7 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
     function burn(uint256 tokenId) external override  onlyMinter
     {
         require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
+            _isApprovedOrOwner(tokenId),
             "caller is not owner nor approved"
         );
 
@@ -233,9 +232,7 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
     /**
      * @dev function to check the approve state 
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool ) {
-
-        spender;
+    function _isApprovedOrOwner( uint256 tokenId) internal view virtual returns (bool ) {
 
         TokenOwnership memory prevOwnership = ownershipOf(tokenId);
 

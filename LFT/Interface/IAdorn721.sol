@@ -34,6 +34,6 @@ interface IAdorn721  {
     function mint(address to, uint256 amount) external returns (uint256 mintStartId) ;
     function burn(uint256 tokenId) external;
     function safeBatchTransferFrom(address from, address to, uint256[] memory ids , bytes memory data) external;
-    function mintedNumber(address addr) external returns(uint256);
+    function mintedNumber(address addr) external view returns(uint256);
     function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external view  returns (uint256[] memory tokens);
 }
