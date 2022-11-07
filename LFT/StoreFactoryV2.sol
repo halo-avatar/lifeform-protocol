@@ -30,6 +30,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -39,7 +40,7 @@ import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
 import "./Interface/IWETH.sol";
 
-contract StoreFactory is Ownable,ReentrancyGuard{
+contract StoreFactoryV2 is Ownable,ReentrancyGuard{
 
     event Adorn721Mint(
         uint256 lastId,
@@ -48,7 +49,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         address target,
         address author,
         address nftContract,
-        uint256 createdTime,
+        uint256 batchNo,
         uint256 blockNum
     );
 
@@ -56,7 +57,6 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         uint256 id,
         address who,
         address nftContract,
-        uint256 createdTime,
         uint256 blockNum
     );
 
@@ -67,7 +67,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         address target,
         address author,
         address nftContract,
-        uint256 createdTime,
+        uint256 batchNo,
         uint256 blockNum
     );
 
@@ -76,19 +76,21 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         uint256[] amounts,
         address who,
         address nftContract,
-        uint256 createdTime,
         uint256 blockNum
     );
 
    struct MintInfo {
         address costErc20;    
-        address collect;      //for 721 or 1155
-        uint256[] ids;        //just use for 1155
+        address collect;        //for 721 or 1155
+        uint256 maxSoldAmount;  //the max sold amount
+        uint256 batchNo;        //cur batchNo
+        uint256[] ids;          //just use for 1155
         uint256[] prices; 
         uint256[] amounts;     
         bytes32 signCode; 
-        bytes wlSignature;    //enable white
+        bytes wlSignature;      //enable white
     }
+
 
     struct EIP712Domain {
         string  name;
@@ -99,6 +101,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
 
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableMap for EnumerableMap.UintToUintMap;
 
     using SafeERC20 for IERC20;
     using Address for address;
@@ -111,10 +114,10 @@ contract StoreFactory is Ownable,ReentrancyGuard{
 
     //type hash
     bytes32 public constant TYPE_HASH = keccak256(
-        "MintInfo(address costErc20,address collect,uint256[] ids,uint256[] prices,uint256[] amounts,bytes32 signCode,bytes wlSignature)"
+        "MintInfo(address costErc20,address collect,uint256 maxSoldAmount,uint256 batchNo,uint256[] ids,uint256[] prices,uint256[] amounts,bytes32 signCode,bytes wlSignature)"
     );
 
-    address private SIGNER;
+    address private _SIGNER;
     EnumerableSet.Bytes32Set private _signCodes;
 
     mapping(address => bool) public _IAMs;
@@ -123,7 +126,15 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     address public  _teamWallet;
     address public  _WETH;
 
-    constructor(address teamWallet, address WETH) {
+
+    // the 721 had sold count
+    mapping(address => EnumerableMap.UintToUintMap ) private _721SoldCount; //erc721->stage->sold count
+
+    // the 1155 had sold count
+    mapping(address => mapping (uint256 => EnumerableMap.UintToUintMap) ) private _1155SoldCount; //erc1155->stage->tokenid->sold count
+
+
+    constructor(address teamWallet, address WETH, address SIGNER) {
 
         _teamWallet = teamWallet;
         _WETH = WETH;
@@ -133,20 +144,20 @@ contract StoreFactory is Ownable,ReentrancyGuard{
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
-                keccak256("StoreFactory"),
-                keccak256("1"),
+                keccak256("StoreFactoryV2"),
+                keccak256("2"),
                 block.chainid,
                 address(this)
             )
         );
 
-        SIGNER = msg.sender;
+        _SIGNER = SIGNER;
     }
 
     function updateTeamWallet(address teamWallet ) public onlyOwner{
         _teamWallet = teamWallet;
     }
-
+    
     function updateWETH(address WETH ) public onlyOwner{
          _WETH = WETH;
     }
@@ -174,11 +185,20 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     }
     
    function updateSigner( address signer) public onlyOwner {
-        SIGNER = signer;
+        _SIGNER = signer;
     }
 
-    function getChainId( ) public view returns (uint256) {
-        return block.chainid;
+
+    function getSoldCount(address nftContract, uint256 batchNo, uint256 tokenId) view public returns(uint256) {
+        bool have;
+        uint256 soldCount;
+        (have,soldCount) = _721SoldCount[nftContract].tryGet(batchNo);
+        if(have || soldCount!=0){
+            return soldCount;
+        }
+
+        (have,soldCount) = _1155SoldCount[nftContract][batchNo].tryGet(tokenId);
+        return soldCount;
     }
 
     function mintAdornWithETH(address target, uint64 ercType, MintInfo calldata condition, bytes memory dataSignature) public payable nonReentrant
@@ -249,6 +269,17 @@ contract StoreFactory is Ownable,ReentrancyGuard{
             _signCodes.add(condition.signCode);
         }
 
+        uint256 soldCount;
+        bool have;
+        (have,soldCount) = _721SoldCount[condition.collect].tryGet(condition.batchNo);
+        if(!have){
+            soldCount = 0;
+        }
+        soldCount += condition.amounts[0];
+        require(soldCount <= condition.maxSoldAmount,"stage sold count is max ");
+        _721SoldCount[condition.collect].set(condition.batchNo,soldCount);
+
+
         uint256 lastId = (IAdorn721)(condition.collect).mint(target, condition.amounts[0]);
 
         emit Adorn721Mint(
@@ -258,7 +289,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
                 target,
                 msg.sender,
                 condition.collect,
-                block.timestamp,
+                condition.batchNo,
                 block.number
             );
     } 
@@ -272,7 +303,6 @@ contract StoreFactory is Ownable,ReentrancyGuard{
                 tokenId,
                 msg.sender,
                 collect,
-                block.timestamp,
                 block.number
             );
     }
@@ -294,6 +324,20 @@ contract StoreFactory is Ownable,ReentrancyGuard{
             _signCodes.add(condition.signCode);
         }
         
+
+        uint256 soldCount;
+        bool have;
+
+        for(uint256 i=0; i<condition.ids.length; i++){
+            (have,soldCount) = _1155SoldCount[condition.collect][condition.batchNo].tryGet(condition.ids[i]);
+            if(!have){
+                soldCount = 0;
+            }
+            soldCount += condition.amounts[i];
+            require(soldCount <= condition.maxSoldAmount,"stage sold count is max ");
+            _1155SoldCount[condition.collect][condition.batchNo].set(condition.ids[i],soldCount);
+        }
+
         (IAdorn1155)(condition.collect).mintBatch(target, condition.ids, condition.amounts, "");
 
         emit Adorn1155Mint(
@@ -303,7 +347,7 @@ contract StoreFactory is Ownable,ReentrancyGuard{
                 target,
                 msg.sender,
                 condition.collect,
-                block.timestamp,
+                condition.batchNo,
                 block.number
             );
     } 
@@ -318,7 +362,6 @@ contract StoreFactory is Ownable,ReentrancyGuard{
                 amounts,
                 msg.sender,
                 collect,
-                block.timestamp,
                 block.number
             );
     }
@@ -356,6 +399,8 @@ contract StoreFactory is Ownable,ReentrancyGuard{
     // struct BatchItemBuyData {
     //     address costErc20;    
     //     address collect;     //for 721 or 1155
+    //     uint256 maxSoldAmount;  //the max sold amount
+    //     uint256 batchNo;        //cur batchNo
     //     uint256[] ids;       //just use for 1155
     //     uint256[] prices; 
     //     uint256[] amounts;     
@@ -368,6 +413,8 @@ contract StoreFactory is Ownable,ReentrancyGuard{
                 TYPE_HASH,
                 condition.costErc20,
                 condition.collect,
+                condition.maxSoldAmount,
+                condition.batchNo,
                 keccak256(abi.encodePacked(condition.ids)),
                 keccak256(abi.encodePacked(condition.prices)),
                 keccak256(abi.encodePacked(condition.amounts)),
@@ -386,12 +433,12 @@ contract StoreFactory is Ownable,ReentrancyGuard{
 
     function verifySignature(bytes32 hash, bytes memory  signature) public view returns (bool) {
         //hash must be a soliditySha3 with accounts.sign
-        return hash.recover(signature) == SIGNER;
+        return hash.recover(signature) == _SIGNER;
     }
 
     function verifyCondition(MintInfo calldata condition, uint8 v, bytes32 r, bytes32 s) public view returns (bool) {
         bytes32 digest = hashDigest(condition);
-        return ecrecover(digest, v, r, s) == SIGNER;    
+        return ecrecover(digest, v, r, s) == _SIGNER;    
     }
 
     function verify( MintInfo calldata condition, address user, bytes memory dataSignature ) public view returns (bool) {

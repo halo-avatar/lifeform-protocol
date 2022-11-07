@@ -35,7 +35,7 @@ import "./Interface/IAvatar721.sol";
 contract Avatar721 is ERC721A, Ownable, IAvatar721 {
    using Strings for uint256;
     
-    string public _baseUri =  "https://ipfs.lifeform.cc/bsc/avata/token/";
+    string public _baseUri =  "https://ipfs.lifeform.cc/bsc-v2/avatar/token/";
     string public _metatype =  ".json";
   
     mapping(uint256=>IAvatar721.ExtraInfo) public _extraInfo;
