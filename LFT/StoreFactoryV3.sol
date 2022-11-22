@@ -40,7 +40,7 @@ import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
 import "./Interface/IWETH.sol";
 
-contract StoreFactoryV2 is Ownable,ReentrancyGuard{
+contract StoreFactoryV3 is Ownable,ReentrancyGuard{
 
     event Adorn721Mint(
         uint256 lastId,
@@ -144,8 +144,8 @@ contract StoreFactoryV2 is Ownable,ReentrancyGuard{
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
-                keccak256("StoreFactoryV2"),
-                keccak256("2"),
+                keccak256("StoreFactoryV3"),
+                keccak256("3"),
                 block.chainid,
                 address(this)
             )
@@ -338,7 +338,13 @@ contract StoreFactoryV2 is Ownable,ReentrancyGuard{
             _1155SoldCount[condition.collect][condition.batchNo].set(condition.ids[i],soldCount);
         }
 
-        (IAdorn1155)(condition.collect).mintBatch(target, condition.ids, condition.amounts, "");
+        //  bsc explore can't watch batch mint event!
+        // (IAdorn1155)(condition.collect).batchMint(target, id, amount,"");
+        for (uint256 i = 0; i < condition.ids.length; ++i) {
+            uint256 id = condition.ids[i];
+            uint256 amount = condition.amounts[i];
+            (IAdorn1155)(condition.collect).mint(target, id, amount,"");
+        }
 
         emit Adorn1155Mint(
                 condition.ids,

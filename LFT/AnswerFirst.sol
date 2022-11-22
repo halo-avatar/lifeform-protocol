@@ -55,7 +55,8 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
         address owner, 
         RegisterType registerType, 
         uint256 timestamp,
-        uint256 activityId
+        uint256 activityId,
+        string affCode
     );
 
     event eWithdraw( 
@@ -85,7 +86,8 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
     IAdorn1155 public _erc1155;
     IAvatar721 public _erc721;
     IERC20 public _erc20;
-    uint256 public _costAmount;
+    uint256 public _registerFee = 20 ether;
+    uint256 public _stakeFee = 1 ether;
     uint256 public _deltaTime = 24 hours - 10 minutes;
     address public _VAULT;
 
@@ -105,16 +107,15 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
         _;
     }
 
-    constructor(address erc20, address erc721, address erc1155, uint256 costAmount, uint256 airDropId, address VAULT ) {
+    constructor(address erc20, address erc721, address erc1155, uint256 airDropId, address VAULT ) {
         _erc20 = IERC20(erc20);
         _erc721 = IAvatar721(erc721);
         _erc1155 = IAdorn1155(erc1155);
-        _costAmount = costAmount;
         _airDropId = airDropId;
         _VAULT = VAULT;
 
         addIAM(msg.sender);
-        newActivity();
+        newActivity(airDropId);
     }
 
     function setErc1155(address erc1155) public onlyOwner{
@@ -129,8 +130,9 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
         _erc20 = IERC20(erc20);
     }
     
-    function setCostAmount(uint256 costAmount) public onlyOwner{
-        _costAmount = costAmount;
+    function setFee(uint256 registerFee,uint256 stakeFee) public onlyOwner{
+        _registerFee = registerFee;
+        _stakeFee = stakeFee;
     }
 
     function setActivityTime(uint256 startTime, uint256 deltaTime) public onlyOwner{
@@ -161,11 +163,13 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
         return this.onERC721Received.selector;
     }
 
-    function newActivity() public onlyIAM {
+    function newActivity(uint256 airDropId) public onlyIAM {
         _activityId++;
         _activityInfo[_activityId].startTime = block.timestamp;
         _activityInfo[_activityId].endTime = block.timestamp + _deltaTime;
         
+        _airDropId = airDropId;
+
         emit eNewActivity(_activityId,block.timestamp,block.timestamp + _deltaTime);
     }
 
@@ -197,13 +201,18 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
         _activityInfo[_activityId].registerCount += 1;
        
         if(registerType == RegisterType.eAvatar){
+
             require( IERC721(address(_erc721)).ownerOf(tokenId) == msg.sender, "invalid owner!");
             IERC721(address(_erc721)).safeTransferFrom(msg.sender, address(this), tokenId);
             _registerInfo[_activityId][msg.sender].tokenId = tokenId;
+
+            _erc20.safeTransferFrom(msg.sender, _VAULT, _stakeFee);
+            _activityInfo[_activityId].allPay += _stakeFee;
+
         }
         else if(registerType == RegisterType.eCash){
-            _erc20.safeTransferFrom(msg.sender, _VAULT, _costAmount);
-             _activityInfo[_activityId].allPay += _costAmount;
+            _erc20.safeTransferFrom(msg.sender, _VAULT, _registerFee);
+            _activityInfo[_activityId].allPay += _registerFee;
         }
         else{
             require(false, "invalid register type!");
@@ -218,7 +227,7 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
             _erc1155.mint(msg.sender, _airDropId, 1, "");
         }
 
-        emit eRegister(tokenId, msg.sender, registerType, block.timestamp, _activityId);
+        emit eRegister(tokenId, msg.sender, registerType, block.timestamp, _activityId, affCode);
     }
 
     function withdrawNFTs() public whenNotPaused nonReentrant {
@@ -240,6 +249,23 @@ contract AnswerFirst is ReentrancyGuard, Pausable, Ownable {
 
         emit eWithdraw(ids, msg.sender, block.timestamp, _activityId);
        
+    }
+
+    function reward(address[] calldata whiteList,uint256[] calldata amounts) onlyIAM external  {
+
+        require(whiteList.length == amounts.length, "count not match!");
+
+        uint256 cost = 0;
+        for(uint256 i=0; i<amounts.length; i++){
+            cost = cost + amounts[i];
+        }
+
+        require(_erc20.balanceOf(address(this)) >= cost, "invalid cost amount! ");
+        for (uint256 i=0; i<whiteList.length; i++) {
+            require(whiteList[i] != address(0),"Address is not valid");
+            _erc20.safeTransfer(whiteList[i], amounts[i]);
+        }
+        
     }
 
     function urgencyWithdrawErc721(address erc721, address target, uint256[] calldata ids) external onlyOwner {
