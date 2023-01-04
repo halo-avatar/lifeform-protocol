@@ -169,6 +169,7 @@ contract AvatarFactory is Ownable, ReentrancyGuard {
     } 
 
    function updateSigner( address signer) public onlyOwner {
+        require(signer != address(0),"the signer address is zero!");
         _SIGNER = signer;
     }
 

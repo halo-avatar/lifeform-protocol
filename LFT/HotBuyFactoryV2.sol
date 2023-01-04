@@ -39,7 +39,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
-import "./Interface/IWETH.sol";
 
 contract HotBuyFactory is Ownable,ReentrancyGuard{
 
@@ -125,14 +124,10 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
     mapping(address => mapping (uint256 => EnumerableMap.UintToUintMap) ) private _1155SoldCount; //erc1155->stage->tokenid->sold count
 
     address public _SIGNER;
-
-    address public _WETH;
-
     address public _VAULT;
 
-    constructor(address SIGNER, address WETH, address VAULT) {
-
-        _WETH = WETH;
+    constructor(address SIGNER, address VAULT) {
+        
         _SIGNER = SIGNER;
         _VAULT = VAULT;
 
@@ -232,9 +227,7 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
         if(costAmount > 0){
 
             require(msg.value >= costAmount, "invalid cost amount! ");
-
-            IWETH(_WETH).deposit{value: msg.value}();
-            IERC20(_WETH).safeTransfer(_VAULT, msg.value);
+            payable(_VAULT).transfer(msg.value);
 
             bool have;
             uint256 saleAmount;
@@ -418,22 +411,22 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
     } 
 
     function withdrawETH(address wallet) external onlyOwner {
+        require(wallet != address(0),"the wallet address is zero!");
         payable(wallet).transfer(address(this).balance);
     }
 
     function urgencyWithdraw(address erc20, address wallet) external onlyOwner {
+        require(wallet != address(0),"the wallet address is zero!");
         IERC20(erc20).safeTransfer(wallet, IERC20(erc20).balanceOf(address(this)));
     }
 
     function updateSigner( address signer) external onlyOwner {
+        require(signer != address(0),"the signer address is zero!");
         _SIGNER = signer;
     }
 
-    function updateWETH( address weth) external onlyOwner {
-        _WETH = weth;
-    }
-    
     function updateVault( address vault) external onlyOwner {
+        require(vault != address(0),"the vault address is zero!");
         _VAULT = vault;
     }
 

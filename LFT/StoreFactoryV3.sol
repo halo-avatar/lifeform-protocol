@@ -38,7 +38,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
-import "./Interface/IWETH.sol";
 
 contract StoreFactoryV3 is Ownable,ReentrancyGuard{
 
@@ -117,15 +116,14 @@ contract StoreFactoryV3 is Ownable,ReentrancyGuard{
         "MintInfo(address costErc20,address collect,uint256 maxSoldAmount,uint256 batchNo,uint256[] ids,uint256[] prices,uint256[] amounts,bytes32 signCode,bytes wlSignature)"
     );
 
-    address private _SIGNER;
+   
     EnumerableSet.Bytes32Set private _signCodes;
 
     mapping(address => bool) public _IAMs;
     bool public _isUserStart = false;
     bool public _onceSignCode = true;
     address public  _teamWallet;
-    address public  _WETH;
-
+    address private _SIGNER;
 
     // the 721 had sold count
     mapping(address => EnumerableMap.UintToUintMap ) private _721SoldCount; //erc721->stage->sold count
@@ -134,11 +132,9 @@ contract StoreFactoryV3 is Ownable,ReentrancyGuard{
     mapping(address => mapping (uint256 => EnumerableMap.UintToUintMap) ) private _1155SoldCount; //erc1155->stage->tokenid->sold count
 
 
-    constructor(address teamWallet, address WETH, address SIGNER) {
+    constructor(address teamWallet, address SIGNER) {
 
         _teamWallet = teamWallet;
-        _WETH = WETH;
-
         addIAM(msg.sender);
 
         DOMAIN_SEPARATOR = keccak256(
@@ -155,13 +151,16 @@ contract StoreFactoryV3 is Ownable,ReentrancyGuard{
     }
 
     function updateTeamWallet(address teamWallet ) public onlyOwner{
+        require(teamWallet != address(0),"the teamWallet address is zero!");
         _teamWallet = teamWallet;
     }
-    
-    function updateWETH(address WETH ) public onlyOwner{
-         _WETH = WETH;
+
+    function updateSigner( address signer) public onlyOwner {
+       require(signer != address(0),"the signer address is zero!");
+        _SIGNER = signer;
     }
 
+    
     function setUserStart(bool start) public onlyOwner {
         _isUserStart = start;
     }
@@ -183,11 +182,6 @@ contract StoreFactoryV3 is Ownable,ReentrancyGuard{
         uint256 balance = asset.balanceOf(address(this));
         asset.safeTransfer(teamWallet, balance);
     }
-    
-   function updateSigner( address signer) public onlyOwner {
-        _SIGNER = signer;
-    }
-
 
     function getSoldCount(address nftContract, uint256 batchNo, uint256 tokenId) view public returns(uint256) {
         bool have;
@@ -211,8 +205,7 @@ contract StoreFactoryV3 is Ownable,ReentrancyGuard{
 
         if(cost>0){
             require(msg.value >= cost, "invalid cost amount! ");
-            IWETH(_WETH).deposit{value: msg.value}();
-            IERC20(_WETH).safeTransfer(_teamWallet, msg.value);
+            payable(_teamWallet).transfer(msg.value);
         }
 
         if(ercType == 1155 ){
