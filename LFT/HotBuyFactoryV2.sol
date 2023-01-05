@@ -40,7 +40,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Interface/IAdorn721.sol";
 import "./Interface/IAdorn1155.sol";
 
-contract HotBuyFactory is Ownable,ReentrancyGuard{
+contract HotBuyFactoryV2 is Ownable,ReentrancyGuard{
 
     using ECDSA for bytes32;
     using Address for address;
@@ -77,7 +77,7 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
         uint256 maxSoldAmount;  //the max sold amount
         bytes32 signCode;       //signCode
         uint256 tokenId;        //the token id, if erctype is 721,the tokenid is zero
-        uint256 stage;           //cur stage
+        uint256 stage;          //cur stage
         address nftContract;    //the hotbuy nft contract address
         address costErc20;      //the cost token address,zero is gas token address
         bytes wlSignature;      //enable white
@@ -134,8 +134,8 @@ contract HotBuyFactory is Ownable,ReentrancyGuard{
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
-                keccak256("HotBuyFactory"),
-                keccak256("1"),
+                keccak256("HotBuyFactoryV2"),
+                keccak256("2"),
                 block.chainid,
                 address(this)
             )
