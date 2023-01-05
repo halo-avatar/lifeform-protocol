@@ -92,6 +92,8 @@ contract BaseMintRule is IAvatarMintRule, Ownable, ReentrancyGuard  {
         
         require( _factory == msg.sender," invalid factory caller" );
 
+        require( mintData.costErc20Amount>0 || mintData.children721.length>0,"invalid mintCodition" );
+        
         if(mintData.stakeErc20Amount>0 && mintData.stakeErc20 != address(0x0)){
             (IERC20)(mintData.stakeErc20).safeTransferFrom(tx.origin, address(this), mintData.stakeErc20Amount);
         }
