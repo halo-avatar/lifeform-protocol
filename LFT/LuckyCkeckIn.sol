@@ -33,12 +33,11 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract LuckyCheckIn is Ownable {
-    
     using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet private _sbtContracts;
     uint256 public _activityID;
-    mapping(address=>uint256) public _checkInDB;
+    mapping(address => uint256) public _checkInDB;
 
     event eCheckIn(
         uint256 activityID,
@@ -53,7 +52,7 @@ contract LuckyCheckIn is Ownable {
         uint256 blockNum
     );
 
-    constructor(address defaulContract){
+    constructor(address defaulContract) {
         addSBTContract(defaulContract);
         newActivity();
     }
@@ -61,51 +60,51 @@ contract LuckyCheckIn is Ownable {
     //draw checkIn
     function checkIn() public {
         require(verify(), "An invalid identity!");
-        _checkInDB[msg.sender]=_activityID;
-        emit eCheckIn(_activityID, msg.sender,block.timestamp,block.number);
+        _checkInDB[msg.sender] = _activityID;
+        emit eCheckIn(_activityID, msg.sender, block.timestamp, block.number);
     }
 
     //new activity
     function newActivity() public onlyOwner {
         _activityID++;
-        emit eNewActivity(_activityID,block.timestamp,block.number);
+        emit eNewActivity(_activityID, block.timestamp, block.number);
     }
 
     //add a sbt contract to white list
     function addSBTContract(address sbtContract) public onlyOwner {
-        if(!_sbtContracts.contains(sbtContract)){
+        if (!_sbtContracts.contains(sbtContract)) {
             _sbtContracts.add(sbtContract);
         }
     }
 
     //remove a sbt contract from white list
     function removeSBTContract(address sbtContract) public onlyOwner {
-        if(_sbtContracts.contains(sbtContract)){
+        if (_sbtContracts.contains(sbtContract)) {
             _sbtContracts.remove(sbtContract);
         }
     }
 
     //get sbt contract in  white list
-    function getSBTContracts() public view returns ( address[] memory ) {
+    function getSBTContracts() public view returns (address[] memory) {
         return _sbtContracts.values();
     }
 
     //get current activity ID
-    function getActivityID() public view returns ( uint256 ) {
+    function getActivityID() public view returns (uint256) {
         return _activityID;
     }
 
     //verify the draw permissions
     function verify() public view returns (bool) {
-        if(_checkInDB[msg.sender] == _activityID){
+        if (_checkInDB[msg.sender] == _activityID) {
             return false;
         }
         //for sbtContract verify
         address sbtContract;
-        for(uint i=0; i< _sbtContracts.length(); i++){
+        for (uint256 i = 0; i < _sbtContracts.length(); i++) {
             sbtContract = _sbtContracts.at(i);
-            if(sbtContract != address(0x0)){
-                if((IERC721)(sbtContract).balanceOf(msg.sender)>0){
+            if (sbtContract != address(0x0)) {
+                if ((IERC721)(sbtContract).balanceOf(msg.sender) > 0) {
                     return true;
                 }
             }

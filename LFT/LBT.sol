@@ -68,7 +68,7 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     function airdrop(address[] calldata whiteList) public onlyOwner {
 
-        for (uint i=0; i<whiteList.length; i++) {
+        for (uint256 i=0; i<whiteList.length; i++) {
 
             address to = whiteList[i];
             require(to != address(0),"Address is not valid");
@@ -183,7 +183,7 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         //for sbtContract verify
         address sbtContract;
-        for(uint i=0; i< _sbtContracts.length(); i++){
+        for(uint256 i=0; i< _sbtContracts.length(); i++){
             sbtContract = _sbtContracts.at(i);
             if(sbtContract != address(0x0)){
                 if((IERC721)(sbtContract).balanceOf(user)>0){
@@ -207,16 +207,16 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint8 v;
         bytes32 r;
         bytes32 s;
-        uint count = _countSignatures(_signatures);
+        uint256 count = _countSignatures(_signatures);
         addresses = new address[](count);
-        for (uint i = 0; i < count; i++) {
+        for (uint256 i = 0; i < count; i++) {
             (v, r, s) = _parseSignature(_signatures, i);
             addresses[i] = ecrecover(_hash, v, r, s);
         }
     }
     
-    function _parseSignature(bytes memory _signatures, uint _pos) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
-        uint offset = _pos * 65;
+    function _parseSignature(bytes memory _signatures, uint256 _pos) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+        uint256 offset = _pos * 65;
         assembly {
             r := mload(add(_signatures, add(32, offset)))
             s := mload(add(_signatures, add(64, offset)))
@@ -228,7 +228,7 @@ contract LifeformBoundToken is ERC721Enumerable, Ownable, ReentrancyGuard {
         require(v == 27 || v == 28);
     }
     
-    function _countSignatures(bytes memory _signatures) internal pure returns (uint) {
+    function _countSignatures(bytes memory _signatures) internal pure returns (uint256) {
         return _signatures.length % 65 == 0 ? _signatures.length / 65 : 0;
     }
 

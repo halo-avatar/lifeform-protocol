@@ -131,7 +131,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      {
         _mintBatch(account, tokenIds, amounts, data);
 
-        for(uint i=0; i<tokenIds.length; i++){
+        for(uint256 i=0; i<tokenIds.length; i++){
             
             if(!_mintedIds.contains(tokenIds[i])){
                 _mintedIds.add(tokenIds[i]);
@@ -191,7 +191,7 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
         }
 
         nftInfos = new IAdorn1155.NftInfo1155[](maxCount);
-        for (uint i=0; i<maxCount; i++) {
+        for (uint256 i=0; i<maxCount; i++) {
             nftInfos[i].id = _mintedIds.at(offset*pageMax+i);
             nftInfos[i].amount = balanceOf(owner, _mintedIds.at(offset*pageMax+i) );
         }
@@ -203,9 +203,9 @@ contract Adorn1155 is ERC1155, Ownable,IAdorn1155 {
      */
     function totalIds() external override view returns ( uint256[] memory ids ) {
         
-        uint maxCount = _mintedIds.length();
+        uint256 maxCount = _mintedIds.length();
         ids = new uint256[](maxCount);
-        for(uint i=0; i<maxCount; i++){
+        for(uint256 i=0; i<maxCount; i++){
             ids[i] = _mintedIds.at(i);
         }
         return ids;

@@ -27,24 +27,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "./Interface/IAvatarMintRule.sol";
+import "./Interface/ICartoonMintRule.sol";
 
-contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
+contract CartoonFactory is Ownable, ReentrancyGuard {
+
+    event eUpdateSigner(
+        address signer,
+        uint256 blockNum
+    );
 
     using ECDSA for bytes32;
-    using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -69,64 +68,83 @@ contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
     //     uint256 stakeErc20Amount;
     //     address costErc20;
     //     uint256 costErc20Amount;
-    //     address erc721;
-    //     uint256 [] children721;
-    //     address erc1155;
-    //     uint256 [] children1155;
-    //     uint256 [] amount1155;
+    //     uint256 limitTimes;
+    //     uint256 mintType;
     //     bytes32 signCode;
     //     bytes wlSignature;    //wlSignature
     // }
 
     bytes32 public constant TYPE_HASH = keccak256(
-        "MintRule(address mintRule,uint256 udIndex,address stakeErc20,uint256 stakeErc20Amount,address costErc20,uint256 costErc20Amount,address erc721,uint256[] children721,address erc1155,uint256[] children1155,uint256[] amount1155,bytes32 signCode,bytes wlSignature)"
+        "MintRule(address mintRule,uint256 udIndex,address stakeErc20,uint256 stakeErc20Amount,address costErc20,uint256 costErc20Amount,uint256 limitTimes,uint256 mintType,bytes32 signCode,bytes wlSignature)"
     );
 
-    address private _SIGNER;
-
+    //signCodes table
     EnumerableSet.Bytes32Set private _signCodes;
-
-    // for IAMs
-    mapping(address => bool) public _IAMs;
 
     //mint rule map 
     EnumerableSet.AddressSet private _mintRules;
+
+    //mint limits map
+    mapping(uint256 => mapping(address => uint256)) public _mintTimes;
+
+    //
+    address public _SIGNER;
+
+    //
+    address public _stakeErc20;
+    address public _costErc20;
+    uint256 public _stakeAmount;
+    uint256 public _costAmount;
     
-    bool public _isUserStart = false;
     bool public _onceSignCode = true;
 
-    constructor(address SIGNER){
-        //default iam
-        addIAM(msg.sender);
-
+    constructor(address SIGNER,
+                address stakeErc20,
+                uint256 stakeAmount,
+                address costErc20,
+                uint256 costAmount
+        )
+    {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
-                keccak256("AvatarFactory"),
-                keccak256("1"),
+                keccak256("CartoonFactory"),
+                keccak256("2"),
                 block.chainid,
                 address(this)
             )
         );
 
+        require(SIGNER != address(0x0), "SIGNER is zero address!");
+        require(costErc20 != address(0x0), "costErc20 is zero address!");
+        require(stakeErc20 != address(0x0), "stakeErc20 is zero address!");
+
         _SIGNER = SIGNER;
+
+        _costErc20 = costErc20;
+        _costAmount = costAmount;
+        _stakeErc20 = stakeErc20;
+        _stakeAmount = stakeAmount;
     }
 
+    function updateCostErc20(address costErc20, uint256 costAmount) public onlyOwner
+    {
+        require(costErc20 != address(0x0), "costErc20 is zero address!");
 
-    function setUserStart(bool start) public onlyOwner {
-        _isUserStart = start;
+        _costErc20 = costErc20;
+        _costAmount = costAmount;
+    }
+
+    function updateStakeErc20(address stakeErc20, uint256 stakeAmount) public onlyOwner
+    {
+        require(stakeErc20 != address(0x0), "stakeErc20 is zero address!");
+
+        _stakeErc20 = stakeErc20;
+        _stakeAmount = stakeAmount;
     }
 
     function setOnceSignCode(bool enable) public onlyOwner {
         _onceSignCode = enable;
-    }
-
-    function addIAM(address IAM) public onlyOwner {
-        _IAMs[IAM] = true;
-    }
-
-    function removeIAM(address IAM) public onlyOwner {
-        _IAMs[IAM] = false;
     }
 
     function addMintRule(address rule) public onlyOwner {
@@ -145,32 +163,45 @@ contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
         return _mintRules.values();
     }
 
-    function mintAvatar721(IAvatarMintRule.MintRule calldata mintData, bytes memory dataSignature) external nonReentrant
+    function mintAvatar721(ICartoonMintRule.MintRule calldata mintData, bytes memory dataSignature) public nonReentrant
     {
-        address origin = msg.sender;
-        if(_IAMs[msg.sender] == false){
-            require(!origin.isContract(), "lifeform: call to non-contract");
-        }
-        require( _isUserStart || _IAMs[msg.sender]  , "lifeform: can't mint" );
-
-        if( _isUserStart ){
-            if(_onceSignCode){
-                require(!isExistSignCode(mintData.signCode),"invalid signCode!");
-            }
-            require(verify(mintData, msg.sender, dataSignature), "this sign is not valid");
-            _signCodes.add(mintData.signCode);
-        }
-
+        require(!msg.sender.isContract(), "lifeform: call to non-contract");
         require(_mintRules.contains(mintData.mintRule),"lifeform: invalid mintRule!" );
+        ICartoonMintRule rule = (ICartoonMintRule)(mintData.mintRule);
 
-        IAvatarMintRule rule = (IAvatarMintRule)(mintData.mintRule);
-        rule.mint(mintData);
+        if(mintData.wlSignature.length>0 ){
+        
+            if(_onceSignCode){
+                require(!isExistSignCode(mintData.signCode),"lifeform: invalid signCode!");
+            }
+            require(verify(mintData, msg.sender, dataSignature), "lifeform: this sign is not valid");
+            require(_mintTimes[mintData.mintType][msg.sender]< mintData.limitTimes,"lifeform: mint times overflow!" );
 
+            _signCodes.add(mintData.signCode);
+            _mintTimes[mintData.mintType][msg.sender] += 1;
+
+            rule.mint(mintData.udIndex,mintData.stakeErc20,mintData.stakeErc20Amount,mintData.costErc20,mintData.costErc20Amount,mintData.mintType);
+         }
+         else{
+            
+            require( _stakeAmount>0 || _costAmount>0,"lifeform: invalid mint rule" );
+            rule.mint(mintData.udIndex,_stakeErc20,_stakeAmount,_costErc20,_costAmount, 0);
+         }
+        
     } 
 
-   function updateSigner( address signer) public onlyOwner {
-        require(signer != address(0),"the signer address is zero!");
-        _SIGNER = signer;
+   function updateSigner( address SIGNER) public onlyOwner {
+
+       require(SIGNER != address(0x0), "SIGNER is zero address!");
+
+        _SIGNER = SIGNER;
+
+        emit eUpdateSigner(SIGNER,block.number);
+    }
+
+    //check the mint times
+    function getTheMintTimes(uint256 mintType, address user) view public returns(uint256) {
+        return _mintTimes[mintType][user];
     }
 
     //check the state of a signCode
@@ -187,7 +218,7 @@ contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
     }
 
     //generate the mintData hash
-    function hashCondition(IAvatarMintRule.MintRule calldata mintData) public pure returns (bytes32) {
+    function hashCondition(ICartoonMintRule.MintRule calldata mintData) public pure returns (bytes32) {
 
         // struct MintRule {
         //     address mintRule;
@@ -196,11 +227,8 @@ contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
         //     uint256 stakeErc20Amount;
         //     address costErc20;
         //     uint256 costErc20Amount;
-        //     address erc721;
-        //     uint256 [] children721;
-        //     address erc1155;
-        //     uint256 [] children1155;
-        //     uint256 [] amount1155;
+        //     uint256 limitTimes;
+        //     uint256 mintType;
         //     bytes32 signCode;
         //     bytes wlSignature;    //wlSignature
         // }
@@ -214,17 +242,14 @@ contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
                 mintData.stakeErc20Amount,
                 mintData.costErc20,
                 mintData.costErc20Amount,
-                mintData.erc721,
-                keccak256(abi.encodePacked(mintData.children721)),
-                mintData.erc1155,
-                keccak256(abi.encodePacked(mintData.children1155)),
-                keccak256(abi.encodePacked(mintData.amount1155)),
+                mintData.limitTimes,
+                mintData.mintType,
                 mintData.signCode,
                 keccak256(mintData.wlSignature))
         );
     }
 
-    function hashDigest(IAvatarMintRule.MintRule calldata mintData) public view returns (bytes32) {
+    function hashDigest(ICartoonMintRule.MintRule calldata mintData) public view returns (bytes32) {
         return keccak256(abi.encodePacked(
             "\x19\x01",
             DOMAIN_SEPARATOR,
@@ -237,21 +262,21 @@ contract AvatarFactoryV2 is Ownable, ReentrancyGuard {
         return hash.recover(signature) == _SIGNER;
     }
 
-    function verifyCondition(IAvatarMintRule.MintRule calldata mintData, uint8 v, bytes32 r, bytes32 s) public view returns (bool) {
+    function verifyCondition(ICartoonMintRule.MintRule calldata mintData, uint8 v, bytes32 r, bytes32 s) public view returns (bool) {
         bytes32 digest = hashDigest(mintData);
         return ecrecover(digest, v, r, s) == _SIGNER;    
     }
 
-    function verify( IAvatarMintRule.MintRule calldata mintData, address user, bytes memory dataSignature ) public view returns (bool) {
+    function verify( ICartoonMintRule.MintRule calldata mintData, address user, bytes memory dataSignature ) public view returns (bool) {
        
-        require(mintData.signCode != "","invalid sign code!");
+        require(mintData.signCode != "","lifeform: invalid sign code!");
 
         bytes32 digest = hashDigest(mintData);
-        require(verifySignature(digest,dataSignature)," invalid dataSignatures! ");
+        require(verifySignature(digest,dataSignature),"lifeform: invalid dataSignatures! ");
 
         if(mintData.wlSignature.length >0 ){
             bytes32 hash = hashWhiteList(user, mintData.signCode);
-            require( verifySignature(hash, mintData.wlSignature), "invalid wlSignature! ");
+            require( verifySignature(hash, mintData.wlSignature), "lifeform: invalid wlSignature! ");
         }
 
         return true;

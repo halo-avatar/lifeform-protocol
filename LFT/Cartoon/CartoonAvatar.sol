@@ -29,16 +29,27 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./Interface/IAdorn721.sol";
 import "../lib/ERC721A.sol";
+import "./Interface/ICartoon721.sol";
 
-contract Adorn721 is ERC721A, Ownable,IAdorn721 {
-    
+contract CartoonAvatar is ERC721A, Ownable, ICartoon721 {
+
     using Strings for uint256;
-    
-    string public _baseUri =  "https://ipfs.lifeform.cc/bsc/adorn721/token/";
-    string public _metatype =  ".json";
 
+    event eAddMinter(
+        address minter,
+        uint256 blockNum
+    );
+    event eRemoveMinter(
+        address minter,
+        uint256 blockNum
+    );
+
+
+    string public _baseUri;
+    string public _metatype;
+  
+    mapping(uint256 => ICartoon721.ExtraInfo) public _extraInfo;
     mapping(address => bool) public _minters;
 
     modifier onlyMinter() {
@@ -51,22 +62,25 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
         ERC721A(name, symbol) {
         _baseUri = base;
         _metatype = metatype; 
-
-        addMinter(owner());
     }
 
     /**
      * @dev function to grant permission to a minter
      */
     function addMinter(address minter) public onlyOwner {
-        _minters[minter] = true;
-    }
 
+        _minters[minter] = true;
+
+        emit eAddMinter(minter,block.number);
+    }
     /**
      * @dev function to remove permission to a minter
      */
     function removeMinter(address minter) public onlyOwner {
+
         _minters[minter] = false;
+
+        emit eRemoveMinter(minter,block.number);
     }
 
     /**
@@ -106,28 +120,48 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
         emit TransferBatch(from, to, ids);
     }
     
+    /**
+     * @dev function to get the metadata url by tokenId
+     */
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), _metatype)) : "";
+    }
 
     /**
-     * @dev function to batch mint 
+     * @dev function to get the oership info by tokenId.
      */
-    function batchMint(address target, uint256 amount) public onlyOwner {
-        _safeMint(target, amount, "");
+    function getOwnershipOf(uint256 tokenId) public view  returns (TokenOwnership  memory) {
+        return _ownerships[tokenId];
     }
 
 
+   
     /**
-     * @dev function to mint tokens.
+     * @dev Function to mint tokens.
      * @param to The address that will receive the minted token.
-     * @param amount The token quantity to mint.
+     * @param mintRule The token info to mint.
+     * @param stakeErc20 The token info to mint.
+     * @param stakeAmount The token info to mint.
      */
-    function mint(address to, uint256 amount) external override  onlyMinter returns  (uint256 mintStartId)
+    function mint(address to, address mintRule, address stakeErc20, uint256 stakeAmount) external override  onlyMinter returns (uint256 id) 
     {
-        mintStartId=_currentIndex;
-        _safeMint(to, amount, "");
+        uint256 tokenId = _currentIndex;
+
+        ICartoon721.ExtraInfo storage sInfo = _extraInfo[_currentIndex];
+        sInfo.mintRule = mintRule;
+        sInfo.stakeErc20 = stakeErc20;
+        sInfo.stakeAmount = stakeAmount;
+        sInfo.id = _currentIndex;
+        
+        _safeMint(to, 1, "");
+
+        return tokenId;
     }
 
     /**
-     * @dev function to burn a specific ERC721 token.
+     * @dev Burns a specific ERC721 token.
      * @param tokenId uint256 id of the ERC721 token to be burned.
      */
     function burn(uint256 tokenId) external override  onlyMinter
@@ -140,33 +174,16 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
         _burn(tokenId);
     }
 
-
     /**
-     * @dev function to get the list of token IDs of the requested owner.
-     */
-    function listMyNFT(address owner) public view returns (uint256[] memory tokens) {
-        uint256 owned = balanceOf(owner);
-        tokens = new uint256[](owned);
-        uint256 start = 0;
-        for (uint256 i=0; i<_currentIndex; i++) {
-            if(_ownerships[i].addr == owner && !_ownerships[i].burned){
-                tokens[start] = i;
-                start++;
-            }
-        }
-    }
-
-    /**
-     * @dev The function returns the list of tokens IDs after the token ID(pageMax*offset)
-     * @param owner the tokens owner address
+     * @dev The function returns the list of tokens info after the token ID(pageMax*offset)
      * @param offset page index
      * @param pageMax the max count of one page
      */
-    function tokensOfOwner(address owner, uint256 offset, uint256 pageMax ) external override view  returns (uint256[] memory tokens) {
+     function tokensInfoByPage(uint256 offset, uint256 pageMax ) public view returns (ICartoon721.ExtraInfo [] memory infos) {
 
         require(pageMax>0, "invalid page size!");
         
-        uint256 balance = balanceOf(owner);
+        uint256 balance = _currentIndex;
         uint256 maxCount = 0;
         if(balance <= pageMax){
             maxCount = balance;
@@ -183,38 +200,23 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
             }
         }
        
-        tokens = new uint256[](maxCount);
-        uint256[] memory allhave = listMyNFT(owner);
-        
-        for(uint256 i=0; i<maxCount; i++){
-            tokens[i] = allhave[offset*pageMax+i];
+        infos = new ICartoon721.ExtraInfo[](maxCount);
+
+        uint256 tokenId = 0;
+        for(uint i=0; i<maxCount; i++){
+            tokenId = offset*pageMax+i;
+            infos[i] = _extraInfo[tokenId];
         }
+
     }
 
-    /**
-     * @dev function to get the metadata url by tokenId
+     /**
+     * @dev function to get the avatar extra info by tokenId
      */
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), _metatype)) : "";
+    function getExtraInfo(uint256 tokenId) external override view returns (ICartoon721.ExtraInfo memory){
+        return _extraInfo[tokenId];
     }
 
-    /**
-     * @dev function to check the owner with a nftid
-     */
-    function isOwner(uint256 nftID, address owner) public view returns(bool isNFTOwner) {
-        address tokenOwner = ownerOf(nftID);
-        isNFTOwner = (tokenOwner == owner);
-    }
-
-    /**
-     * @dev function to get the oership info by tokenId.
-     */
-    function getOwnershipOf(uint256 tokenId) public view  returns (TokenOwnership  memory) {
-        return _ownerships[tokenId];
-    }
-    
     /**
      * @dev IERC165-supportsInterface
      */
@@ -242,4 +244,5 @@ contract Adorn721 is ERC721A, Ownable,IAdorn721 {
 
         return isApprovedOrOwner;
     }
+
 }

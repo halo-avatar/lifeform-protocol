@@ -150,8 +150,8 @@ contract HotBuyFactoryV2 is Ownable,ReentrancyGuard{
         _projcetSwitch[nftContract][costErc20] = true;
     }
 
-    function setUserStart(address nftContract, address costErc20, bool start) public onlyOwner {
-        _projcetSwitch[nftContract][costErc20] = start;
+    function disableProject(address nftContract, address costErc20) public onlyOwner {
+        _projcetSwitch[nftContract][costErc20] = false;
     }
 
     function addIAM(address nftContract,address minter) public onlyOwner {

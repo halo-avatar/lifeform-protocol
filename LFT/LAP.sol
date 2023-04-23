@@ -60,7 +60,7 @@ contract LAP is ERC721A, Ownable  {
         uint256 owned = balanceOf(owner);
         tokens = new uint256[](owned);
         uint256 start = 0;
-        for (uint i=0; i<totalSupply(); i++) {
+        for (uint256 i=0; i<totalSupply(); i++) {
             if (ownerOf(i) == owner) {
                 tokens[start] = i;
                 start ++;
@@ -72,7 +72,7 @@ contract LAP is ERC721A, Ownable  {
 
       require(_minters[msg.sender], "!minter");
 
-      for (uint i=0; i<whiteList.length; i++) {
+      for (uint256 i=0; i<whiteList.length; i++) {
             address to = whiteList[i];
             require(to != address(0),"Address is not valid");
 

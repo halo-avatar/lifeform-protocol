@@ -167,7 +167,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
         uint256 owned = balanceOf(owner);
         tokens = new uint256[](owned);
         uint256 start = 0;
-        for (uint i=0; i<_currentIndex; i++) {
+        for (uint256 i=0; i<_currentIndex; i++) {
             if(_ownerships[i].addr == owner && !_ownerships[i].burned){
                 tokens[start] = i;
                 start++;
@@ -205,7 +205,7 @@ contract Avatar721 is ERC721A, Ownable, IAvatar721 {
         infos = new IAvatar721.ExtraInfo[](maxCount);
         uint256[] memory allhave = listMyNFT(owner);
         
-        for(uint i=0; i<maxCount; i++){
+        for(uint256 i=0; i<maxCount; i++){
             infos[i] = _extraInfo[allhave[offset*pageMax+i]];
         }
 

@@ -39,6 +39,16 @@ contract LifeformToken is IERC20, Ownable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+    event eAddMinter(
+        address minter,
+        uint256 blockNum
+    );
+    event eRemoveMinter(
+        address minter,
+        uint256 blockNum
+    );
+
+
     // for minters
     mapping (address => bool) public _minters;
 
@@ -159,12 +169,17 @@ contract LifeformToken is IERC20, Ownable {
 
     function addMinter(address minter) public onlyOwner 
     {
+        
         _minters[minter] = true;
+
+        emit eAddMinter(minter,block.number);
     }
     
     function removeMinter(address minter) public onlyOwner 
     {
         _minters[minter] = false;
+
+         emit eRemoveMinter(minter,block.number);
     }
 
     /**
@@ -196,7 +211,7 @@ contract LifeformToken is IERC20, Ownable {
  
 
     /**
-    * @dev 
+    * @dev Transfer tokens with fee
     * @param from address The address which you want to send tokens from
     * @param to address The address which you want to transfer to
     * @param value uint256s the amount of tokens to be transferred
@@ -218,7 +233,5 @@ contract LifeformToken is IERC20, Ownable {
 
         return true;
     }
-
-     fallback() external payable {}
 
 }
